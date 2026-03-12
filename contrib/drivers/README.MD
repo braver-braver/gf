@@ -119,8 +119,8 @@ import _ "github.com/gogf/gf/contrib/drivers/oracle/v2"
 
 Note:
 
-- It does not support `LastInsertId`.
-- `InsertIgnore` returns error if there is no primary key or unique index submitted with record.
+- Supports `LastInsertId` for numeric primary keys (for example, sequence/trigger-based auto IDs).
+- `InsertIgnore` without explicit `OnConflict` falls back to normal insert and ignores duplicate-key conflicts.
 
 ### ClickHouse
 
