@@ -8,6 +8,7 @@ package oracle
 
 import (
 	"database/sql"
+	"os"
 	"strings"
 
 	gora "github.com/sijms/go-ora/v2"
@@ -31,7 +32,12 @@ func (d *Driver) Open(config *gdb.ConfigNode) (db *sql.DB, err error) {
 	}
 
 	if config.Debug {
-		options["TRACE FILE"] = "oracle_trace.log"
+		// Keep tracing compatible with services whose working directory is
+		// read-only but whose logs directory is writable. If logs cannot be
+		// created, do not make every database operation fail for debug tracing.
+		if err := os.MkdirAll("logs", 0o755); err == nil {
+			options["TRACE FILE"] = "logs/oracle_trace.log"
+		}
 	}
 	// [username:[password]@]host[:port][/service_name][?param1=value1&...&paramN=valueN]
 	if config.Extra != "" {

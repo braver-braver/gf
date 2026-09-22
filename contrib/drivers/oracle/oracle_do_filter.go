@@ -25,6 +25,8 @@ SELECT * FROM (
 `
 )
 
+const quotedSizePlaceholder = "__ORACLE2_QUOTED_SIZE__"
+
 func init() {
 	var err error
 	newSqlReplacementTmp, err = gdb.FormatMultiLineSqlToSingle(newSqlReplacementTmp)
@@ -45,15 +47,18 @@ func (d *Driver) DoFilter(ctx context.Context, link gdb.Link, sql string, args [
 	if err != nil {
 		return
 	}
-	newSql, err = gregex.ReplaceString("\"", "", newSql)
-	if err != nil {
-		return
-	}
+	newSql = stripOracleIdentifierQuotes(newSql)
 	newSql, err = d.parseSql(newSql)
 	if err != nil {
 		return
 	}
 	return d.Core.DoFilter(ctx, link, newSql, newArgs)
+}
+
+func stripOracleIdentifierQuotes(sql string) string {
+	sql = strings.ReplaceAll(sql, `"SIZE"`, quotedSizePlaceholder)
+	sql = strings.ReplaceAll(sql, `"`, "")
+	return strings.ReplaceAll(sql, quotedSizePlaceholder, `"SIZE"`)
 }
 
 // parseSql does some replacement of the sql before commits it to underlying driver,

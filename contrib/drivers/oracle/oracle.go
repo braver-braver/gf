@@ -22,8 +22,10 @@ const (
 )
 
 func init() {
-	if err := gdb.Register(`oracle`, New()); err != nil {
-		panic(err)
+	for _, name := range []string{`oracle`, `oracle2`} {
+		if err := gdb.Register(name, New()); err != nil {
+			panic(err)
+		}
 	}
 }
 
