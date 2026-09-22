@@ -267,11 +267,11 @@ func Test_Model_InsertIgnore(t *testing.T) {
 			"create_time": gtime.Now(),
 		}
 		_, err := db.Model(table).Data(data).InsertIgnore()
-		t.AssertNE(err, nil)
+		t.AssertNil(err)
 
 		count, err := db.Model(table).Count()
 		t.AssertNil(err)
-		t.Assert(count, TableSize)
+		t.Assert(count, TableSize+1)
 	})
 }
 
