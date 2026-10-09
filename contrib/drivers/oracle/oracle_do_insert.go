@@ -166,9 +166,24 @@ func (d *Driver) doMergeInsert(
 			}
 		}
 		if !foundPrimaryKey {
+			// For InsertIgnore without conflict keys, fallback to normal insert.
+			// Oracle has no native INSERT IGNORE syntax, so we insert directly and
+			// suppress duplicate-key errors to keep behavior consistent with Ignore semantics.
+			if !withUpdate {
+				insertResult, err := d.Core.DoInsert(ctx, link, table, list, option)
+				if err != nil {
+					errString := strings.ToUpper(err.Error())
+					if strings.Contains(errString, "ORA-00001") ||
+						strings.Contains(errString, "UNIQUE CONSTRAINT") {
+						return insertResult, nil
+					}
+					return insertResult, err
+				}
+				return insertResult, nil
+			}
 			return nil, gerror.NewCodef(
 				gcode.CodeMissingParameter,
-				`Replace/Save/InsertIgnore operation requires conflict detection: `+
+				`Replace/Save operation requires conflict detection: `+
 					`either specify OnConflict() columns or ensure table '%s' has a primary key in the data`,
 				table,
 			)
