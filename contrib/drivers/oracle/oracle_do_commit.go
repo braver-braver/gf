@@ -8,12 +8,33 @@ package oracle
 
 import (
 	"context"
+	"strings"
 
 	"github.com/gogf/gf/v2/database/gdb"
 )
 
+// isReleaseSavepoint recognizes the unsupported Oracle statement without
+// accidentally swallowing a second statement or a malformed command.
+func isReleaseSavepoint(statement string) bool {
+	statement = strings.TrimSpace(strings.TrimSuffix(strings.TrimSpace(statement), ";"))
+	words := strings.Fields(statement)
+	return len(words) == 3 &&
+		strings.EqualFold(words[0], "RELEASE") &&
+		strings.EqualFold(words[1], "SAVEPOINT") &&
+		words[2] != ""
+}
+
 // DoCommit commits current sql and arguments to underlying sql driver.
 func (d *Driver) DoCommit(ctx context.Context, in gdb.DoCommitInput) (out gdb.DoCommitOutput, err error) {
+	// Oracle has no RELEASE SAVEPOINT; the savepoint is discarded by
+	// transaction COMMIT or ROLLBACK. Preserve GoFrame's nested-tx behavior.
+	if isReleaseSavepoint(in.Sql) {
+		result := &Result{}
+		out.Result = result
+		out.RawResult = result
+		return out, nil
+	}
+
 	out, err = d.Core.DoCommit(ctx, in)
 	if err != nil {
 		return

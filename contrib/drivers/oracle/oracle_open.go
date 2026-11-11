@@ -8,6 +8,7 @@ package oracle
 
 import (
 	"database/sql"
+	"os"
 	"strings"
 
 	gora "github.com/sijms/go-ora/v2"
@@ -42,7 +43,11 @@ func openOptions(config *gdb.ConfigNode) map[string]string {
 	}
 
 	if config.Debug {
-		options["TRACE FILE"] = "oracle_trace.log"
+		// Traces are optional: do not block database connections if the working
+		// directory is read-only or logs cannot be created.
+		if err := os.MkdirAll("logs", 0o755); err == nil {
+			options["TRACE FILE"] = "logs/oracle_trace.log"
+		}
 	}
 	// [username:[password]@]host[:port][/service_name][?param1=value1&...&paramN=valueN]
 	if config.Extra != "" {
